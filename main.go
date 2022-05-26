@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-type Block struct {
+type JiunBlock struct {
 	Index     int
 	Timestamp string
 	BPM       int
@@ -26,7 +26,7 @@ type Message struct {
 	BPM int
 }
 
-var Blockchain []Block
+var Blockchain []JiunBlock
 
 func main() {
 	err := godotenv.Load()
@@ -36,22 +36,22 @@ func main() {
 
 	go func() {
 		t := time.Now()
-		block := Block{0, t.String(), 0, "", ""}
-		spew.Dump(block)
-		Blockchain = append(Blockchain, block)
+		JiunBlock := JiunBlock{0, t.String(), 0, "", ""}
+		spew.Dump(JiunBlock)
+		Blockchain = append(Blockchain, JiunBlock)
 	}()
 	log.Fatal(run())
 }
 
-func calculateHash(block Block) string {
-	sum := string(rune(block.Index)) + string(rune(block.BPM)) + block.Timestamp + block.PrevHash
+func calculateHash(JiunBlock JiunBlock) string {
+	sum := string(rune(JiunBlock.Index)) + string(rune(JiunBlock.BPM)) + JiunBlock.Timestamp + JiunBlock.PrevHash
 	hash := sha256.New()
 	hash.Write([]byte(sum))
 	return hex.EncodeToString(hash.Sum(nil))
 }
 
-func generateBlock(oldBlock Block, BPM int) (Block, error) {
-	var newBlock Block
+func generateBlock(oldBlock JiunBlock, BPM int) (JiunBlock, error) {
+	var newBlock JiunBlock
 	newBlock.Index = oldBlock.Index + 1
 	newBlock.BPM = BPM
 	newBlock.PrevHash = oldBlock.Hash
@@ -60,7 +60,7 @@ func generateBlock(oldBlock Block, BPM int) (Block, error) {
 	return newBlock, nil
 }
 
-func checkBlock(newBlock, oldBlock Block) bool {
+func checkBlock(newBlock, oldBlock JiunBlock) bool {
 	if oldBlock.Index+1 != newBlock.Index {
 		return false
 	}
@@ -76,7 +76,7 @@ func checkBlock(newBlock, oldBlock Block) bool {
 	return true
 }
 
-func replaceChain(newBlocks []Block) {
+func replaceChain(newBlocks []JiunBlock) {
 	if len(newBlocks) > len(Blockchain) {
 		Blockchain = newBlocks
 	}
@@ -117,13 +117,13 @@ func handleWriteBlock(writer http.ResponseWriter, request *http.Request) {
 	}
 	defer request.Body.Close()
 
-	block, err := generateBlock(Blockchain[len(Blockchain)-1], m.BPM)
+	JiunBlock, err := generateBlock(Blockchain[len(Blockchain)-1], m.BPM)
 	if err != nil {
 		respondWithJSON(writer, request, http.StatusInternalServerError, m)
 		return
 	}
-	if checkBlock(block, Blockchain[len(Blockchain)-1]) {
-		newBlockchain := append(Blockchain, block)
+	if checkBlock(JiunBlock, Blockchain[len(Blockchain)-1]) {
+		newBlockchain := append(Blockchain, JiunBlock)
 		replaceChain(newBlockchain)
 		spew.Dump(Blockchain)
 	}
