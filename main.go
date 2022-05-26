@@ -115,7 +115,12 @@ func handleWriteBlock(writer http.ResponseWriter, request *http.Request) {
 		respondWithJSON(writer, request, http.StatusBadRequest, request.Body)
 		return
 	}
-	defer request.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+
+		}
+	}(request.Body)
 
 	JiunBlock, err := generateBlock(Blockchain[len(Blockchain)-1], m.BPM)
 	if err != nil {
@@ -136,11 +141,17 @@ func respondWithJSON(writer http.ResponseWriter, request *http.Request, created 
 	response, err := json.MarshalIndent(payload, "", " ")
 	if err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)
-		writer.Write([]byte("HTTP 500: Internal Server Error"))
+		_, err := writer.Write([]byte("HTTP 500: Internal Server Error"))
+		if err != nil {
+			return
+		}
 		return
 	}
 	writer.WriteHeader(created)
-	writer.Write(response)
+	_, err = writer.Write(response)
+	if err != nil {
+		return
+	}
 }
 
 func handleGetBlockchain(writer http.ResponseWriter, request *http.Request) {
@@ -150,5 +161,8 @@ func handleGetBlockchain(writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	io.WriteString(writer, string(bytes))
+	_, err = io.WriteString(writer, string(bytes))
+	if err != nil {
+		return
+	}
 }
